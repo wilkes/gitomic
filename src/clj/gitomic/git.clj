@@ -17,31 +17,31 @@
              (.setDiffComparator RawTextComparator/WS_IGNORE_ALL))]
     (map (fn [^DiffEntry d]
            (let []
-             {:change-type (-> (.getChangeType d)
+             {:diff/change-type (-> (.getChangeType d)
                                .toString .toLowerCase keyword)
-              :new-path (.getNewPath d)
-              :old-path (.getOldPath d)
-              :new-sha (ObjectId/toString (.toObjectId (.getNewId d)))
-              :old-sha (ObjectId/toString (.toObjectId (.getOldId d)))}))
+              :diff/new-path (.getNewPath d)
+              :diff/old-path (.getOldPath d)
+              :diff/new-sha (ObjectId/toString (.toObjectId (.getNewId d)))
+              :diff/old-sha (ObjectId/toString (.toObjectId (.getOldId d)))}))
          (.scan df p t))))
 
 (defn person [^PersonIdent pi]
-  {:name (.getName pi)
-   :email (.getEmailAddress pi)})
+  {:person/name (.getName pi)
+   :person/email (.getEmailAddress pi)})
 
 (defn make-commit [^Repository r ^RevCommit c]
   (let [diffs (diff-tree r
                          (.getTree c)
                          (some-> c .getParents first .getTree))]
-    {:sha (ObjectId/toString c)
-     :committer (-> c .getCommitterIdent person)
-     :author (-> c .getAuthorIdent person)
-     :message (.getFullMessage c)
-     :parents (into [] (map #(ObjectId/toString %) (.getParents c)))
-     :tree (-> c .getTree ObjectId/toString)
-     :time (Date. (int (* 1000 (.getCommitTime c))))
-     :diffs diffs
-     :diffs-count (count diffs)}))
+    {:commit/sha (ObjectId/toString c)
+     :commit/committer (-> c .getCommitterIdent person)
+     :commit/author (-> c .getAuthorIdent person)
+     :commit/message (.getFullMessage c)
+     :commit/parents (into [] (map #(ObjectId/toString %) (.getParents c)))
+     :commit/tree (-> c .getTree ObjectId/toString)
+     :commit/time (Date. (long (* 1000 (.getCommitTime c))))
+     :commit/diffs diffs
+     :commit/diffs-count (count diffs)}))
 
 (defn open-repo [path]
   (FileRepositoryBuilder/create (io/file path ".git")))
@@ -59,8 +59,7 @@
           (def n (atom 0))
           (def b (atom 0))
           (def l (git-log r))
-          (def c (rand-nth (into [] l))))
-        )
+          (def c (rand-nth (into [] l)))))
 
   (time (doseq [c (commits r l)]
           (swap! n inc)
