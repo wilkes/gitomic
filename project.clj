@@ -3,6 +3,9 @@
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
+  :repositories {"my.datomic.com" {:url "https://my.datomic.com/repo"
+                                   :creds :gpg}
+                 "jgit-repository" {:url "https://repo.eclipse.org/content/groups/releases/"}}
 
   :source-paths ["src/clj"]
 
@@ -16,7 +19,9 @@
                  [enlive "1.1.6"]
                  [org.omcljs/om "0.8.8"]
                  [environ "1.0.0"]
-                 [clj-jgit "0.8.8"]
+                 [org.eclipse.jgit/org.eclipse.jgit "4.0.1.201506240215-r" :exclusions [[com.jcraft/jsch]]]
+                 [com.datomic/datomic-pro "0.9.5201" :exclusions [commons-codec joda-time]]
+                 [cursive/datomic-stubs "0.9.5153" :scope "provided"]
                  ]
 
   :plugins [[lein-cljsbuild "1.0.6"]
@@ -40,7 +45,8 @@
                    :dependencies [[figwheel "0.2.5"]
                                   [figwheel-sidecar "0.2.5"]
                                   [com.cemerick/piggieback "0.1.5"]
-                                  [weasel "0.6.0"]]
+                                  [weasel "0.6.0"]
+                                  ]
 
                    :repl-options {:init-ns gitomic.server
                                   :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
