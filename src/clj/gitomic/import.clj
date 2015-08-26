@@ -44,17 +44,20 @@
         (into (map (partial parent-fact cid) (:commit/parents c)))
         (into (mapcat (partial diff-facts cid) (:commit/diffs c))))))
 
+(defn create-repo [name path]
+  (let [r-fact (repo-fact name path)
+        {:keys [db-after tempids]} (dtm/tx (dtm/connect) [r-fact])]
+    (d/resolve-tempid db-after tempids (:db/id r-fact))))
+
 (defn main [repo-name repo-path]
   (println "Creating db: " (dtm/create-db))
-  (let [r-fact (repo-fact repo-name repo-path)
-        repo (git/open-repo repo-path)
-        n (atom 0)]
-    (dtm/ensure-schema (dtm/connect))
-    (dtm/tx (dtm/connect) [r-fact])
+  (dtm/ensure-schema (dtm/connect))
+  (let [repo (git/open-repo repo-path)
+        n (atom 0)
+        repo-id (create-repo repo-name repo-path)]
     (doseq [c (git/commits repo (git/git-log repo))]
       (swap! n inc)
-      (dtm/tx (dtm/connect)
-                (commit-facts (:db/id r-fact) c))
+      (dtm/tx (dtm/connect)(commit-facts repo-id c))
       (when (= 0 (rem @n 100))
         (print ".")
         (flush)))

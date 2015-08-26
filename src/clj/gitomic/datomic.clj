@@ -117,8 +117,6 @@
     :db/fulltext true
     :db.install/_attribute :db.part/db}
 
-
-
    {:db/id #db/id[:db.part/db]
     :db/ident :diff/new-path
     :db/valueType :db.type/ref
@@ -170,8 +168,9 @@
 (defn tx [conn facts]
   @(d/transact-async conn facts))
 
-(defn ent [id]
-  (d/entity (db) id))
+(defn ent
+  ([id] (ent (db) id))
+  ([db id] (d/entity db id)))
 
 
 (defn create-db []
