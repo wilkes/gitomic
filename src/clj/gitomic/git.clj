@@ -1,6 +1,6 @@
 (ns gitomic.git
   (:require[clojure.pprint :refer [pprint]]
-            [clojure.java.io :as io])
+           [clojure.java.io :as io])
   (:import
     [org.eclipse.jgit.lib Repository PersonIdent ObjectId]
     [org.eclipse.jgit.storage.file FileRepositoryBuilder]
@@ -17,8 +17,11 @@
              (.setDiffComparator RawTextComparator/WS_IGNORE_ALL))]
     (map (fn [^DiffEntry d]
            (let []
-             {:diff/change-type (-> (.getChangeType d)
-                               .toString .toLowerCase keyword)
+             {:diff/change-type (->> d
+                                     .getChangeType
+                                     .toString
+                                     .toLowerCase
+                                     (keyword "change"))
               :diff/new-path (.getNewPath d)
               :diff/old-path (.getOldPath d)
               :diff/new-sha (ObjectId/toString (.toObjectId (.getNewId d)))

@@ -5,10 +5,19 @@
 (def schema
   [
    {:db/id #db/id[:db.part/db]
-    :db/ident :repo/location
+    :db/ident :repo/name
     :db/valueType :db.type/string
     :db/cardinality :db.cardinality/one
     :db/fulltext true
+    :db/unique :db.unique/identity
+    :db.install/_attribute :db.part/db}
+
+   {:db/id #db/id[:db.part/db]
+    :db/ident :repo/path
+    :db/valueType :db.type/string
+    :db/cardinality :db.cardinality/one
+    :db/fulltext true
+    :db/unique :db.unique/identity
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
@@ -30,7 +39,7 @@
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
-    :db/ident :commit/diff-count
+    :db/ident :commit/diffs-count
     :db/valueType :db.type/long
     :db/cardinality :db.cardinality/one
     :db.install/_attribute :db.part/db}
@@ -51,6 +60,12 @@
     :db/ident :commit/author
     :db/valueType :db.type/ref
     :db/cardinality :db.cardinality/one
+    :db.install/_attribute :db.part/db}
+
+   {:db/id #db/id[:db.part/db]
+    :db/ident :commit/parents
+    :db/valueType :db.type/ref
+    :db/cardinality :db.cardinality/many
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
@@ -75,6 +90,7 @@
    {:db/id #db/id[:db.part/db]
     :db/ident :commit/sha
     :db/valueType :db.type/string
+    :db/unique :db.unique/identity
     :db/cardinality :db.cardinality/one
     :db.install/_attribute :db.part/db}
 
@@ -89,21 +105,30 @@
     :db/ident :person/email
     :db/valueType :db.type/string
     :db/cardinality :db.cardinality/one
+    :db/unique :db.unique/identity
     :db/fulltext true
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
-    :db/ident :diff/new-path
+    :db/ident :file/path
     :db/valueType :db.type/string
     :db/cardinality :db.cardinality/one
+    :db/unique :db.unique/identity
     :db/fulltext true
+    :db.install/_attribute :db.part/db}
+
+
+
+   {:db/id #db/id[:db.part/db]
+    :db/ident :diff/new-path
+    :db/valueType :db.type/ref
+    :db/cardinality :db.cardinality/one
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
     :db/ident :diff/old-path
-    :db/valueType :db.type/string
+    :db/valueType :db.type/ref
     :db/cardinality :db.cardinality/one
-    :db/fulltext true
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
@@ -142,11 +167,19 @@
 (defn tid []
   (d/tempid :db.part/user))
 
-(defn tx [facts]
-  @(d/transact-async (connect) facts))
+(defn tx [conn facts]
+  @(d/transact-async conn facts))
 
 (defn ent [id]
   (d/entity (db) id))
 
+
+(defn create-db []
+  (d/create-database (env :datomic-uri)))
+
+(defn delete-db []
+  (d/delete-database (env :datomic-uri)))
+
 (defn ensure-schema [conn]
   @(d/transact conn schema))
+
