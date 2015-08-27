@@ -39,6 +39,7 @@
     {:commit/sha (ObjectId/toString c)
      :commit/committer (-> c .getCommitterIdent person)
      :commit/author (-> c .getAuthorIdent person)
+     :commit/short-message (.getShortMessage c)
      :commit/message (.getFullMessage c)
      :commit/parents (into [] (map #(ObjectId/toString %) (.getParents c)))
      :commit/tree (-> c .getTree ObjectId/toString)

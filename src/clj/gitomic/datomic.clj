@@ -47,6 +47,7 @@
    {:db/id #db/id[:db.part/db]
     :db/ident :commit/diffs
     :db/valueType :db.type/ref
+    :db/isComponent true
     :db/cardinality :db.cardinality/many
     :db.install/_attribute :db.part/db}
 
@@ -69,14 +70,8 @@
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
-    :db/ident :commit/parent1
-    :db/valueType :db.type/string
-    :db/cardinality :db.cardinality/one
-    :db.install/_attribute :db.part/db}
-
-   {:db/id #db/id[:db.part/db]
-    :db/ident :commit/parent2
-    :db/valueType :db.type/string
+    :db/ident :commit/merge?
+    :db/valueType :db.type/boolean
     :db/cardinality :db.cardinality/one
     :db.install/_attribute :db.part/db}
 
@@ -88,10 +83,23 @@
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
+    :db/ident :commit/short-message
+    :db/valueType :db.type/string
+    :db/cardinality :db.cardinality/one
+    :db/fulltext true
+    :db.install/_attribute :db.part/db}
+
+   {:db/id #db/id[:db.part/db]
     :db/ident :commit/sha
     :db/valueType :db.type/string
     :db/unique :db.unique/identity
     :db/cardinality :db.cardinality/one
+    :db.install/_attribute :db.part/db}
+
+   {:db/id #db/id[:db.part/db]
+    :db/ident :commit/files
+    :db/valueType :db.type/ref
+    :db/cardinality :db.cardinality/many
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
