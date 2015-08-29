@@ -27,8 +27,9 @@
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
-    :db/ident :commit/tree
+    :db/ident :commit/sha
     :db/valueType :db.type/string
+    :db/unique :db.unique/identity
     :db/cardinality :db.cardinality/one
     :db.install/_attribute :db.part/db}
 
@@ -39,22 +40,10 @@
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
-    :db/ident :commit/diffs-count
-    :db/valueType :db.type/long
-    :db/cardinality :db.cardinality/one
-    :db.install/_attribute :db.part/db}
-
-   {:db/id #db/id[:db.part/db]
-    :db/ident :commit/diffs
+    :db/ident :commit/changes
     :db/valueType :db.type/ref
     :db/isComponent true
     :db/cardinality :db.cardinality/many
-    :db.install/_attribute :db.part/db}
-
-   {:db/id #db/id[:db.part/db]
-    :db/ident :commit/committer
-    :db/valueType :db.type/ref
-    :db/cardinality :db.cardinality/one
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
@@ -76,30 +65,17 @@
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
-    :db/ident :commit/message
+    :db/ident :commit/subject
     :db/valueType :db.type/string
     :db/cardinality :db.cardinality/one
     :db/fulltext true
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
-    :db/ident :commit/short-message
+    :db/ident :commit/body
     :db/valueType :db.type/string
     :db/cardinality :db.cardinality/one
     :db/fulltext true
-    :db.install/_attribute :db.part/db}
-
-   {:db/id #db/id[:db.part/db]
-    :db/ident :commit/sha
-    :db/valueType :db.type/string
-    :db/unique :db.unique/identity
-    :db/cardinality :db.cardinality/one
-    :db.install/_attribute :db.part/db}
-
-   {:db/id #db/id[:db.part/db]
-    :db/ident :commit/files
-    :db/valueType :db.type/ref
-    :db/cardinality :db.cardinality/many
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
@@ -126,33 +102,25 @@
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
-    :db/ident :diff/new-path
+    :db/ident :change/path
     :db/valueType :db.type/ref
     :db/cardinality :db.cardinality/one
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
-    :db/ident :diff/old-path
-    :db/valueType :db.type/ref
+    :db/ident :change/added
+    :db/valueType :db.type/long
     :db/cardinality :db.cardinality/one
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
-    :db/ident :diff/new-sha
-    :db/valueType :db.type/string
+    :db/ident :change/deleted
+    :db/valueType :db.type/long
     :db/cardinality :db.cardinality/one
-    :db/fulltext true
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
-    :db/ident :diff/old-sha
-    :db/valueType :db.type/string
-    :db/cardinality :db.cardinality/one
-    :db/fulltext true
-    :db.install/_attribute :db.part/db}
-
-   {:db/id #db/id[:db.part/db]
-    :db/ident :diff/change-type
+    :db/ident :change/type
     :db/valueType :db.type/ref
     :db/cardinality :db.cardinality/one
     :db.install/_attribute :db.part/db}
