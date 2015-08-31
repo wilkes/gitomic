@@ -45,20 +45,21 @@
 (defn weight [max n]
   (float (/ n max)))
 
+(defn weighted-tuple [xs pos max]
+  (mapv (fn [x]
+          (concat x (weight max (nth x pos))))
+        xs))
+
 (defn churn [db r]
-  (let [pairs (reverse
-                (sort-by second
-                         (q '[:find ?p (count ?ch)
-                              :in $ ?r
-                              :where
-                              [?r :repo/files ?f]
-                              [?f :file/path ?p]
-                              [?ch :change/file ?f]]
-                            db r)))
-        m (-> pairs first second)]
-    (mapv (fn [[p n]]
-            [p n (weight m n)])
-          pairs)))
+  (reverse
+    (sort-by second
+             (q '[:find ?p (count ?ch)
+                  :in $ ?r
+                  :where
+                  [?r :repo/files ?f]
+                  [?f :file/path ?p]
+                  [?ch :change/file ?f]]
+                db r))))
 
 (defn file-commit-pair [db r file-path]
   (reverse

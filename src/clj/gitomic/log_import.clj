@@ -1,12 +1,27 @@
 (ns gitomic.log-import
   (:require [clojure.java.io :as io]
+            [clojure.java.shell :refer [sh]]
             [clojure.string :as string]
             [clojure.edn :as edn]
             [clojure.pprint :refer [pprint]]
             [datomic.api :as d]
-            [gitomic.datomic :as gd]))
+            [gitomic.datomic :as gd]
+            ))
 
-; git log --pretty=format:'GITOMIC%n["%H" "%P" "%an" "%ae" #inst "%ad"]%n%s%n--%n%b%n--' --date=iso-strict --numstat --reverse
+;
+
+(defn git-log-commits [d]
+  (-> (sh "git"
+          "log"
+          "--pretty=format:GITOMIC%n[\"%H\" \"%P\" \"%an\" \"%ae\" #inst \"%ad\"]%n%s%n--%n%b%n--"
+          "--date=iso-strict"
+          "--numstat"
+          "--reverse"
+          :dir d)
+      :out
+      (java.io.StringReader.)
+      io/reader
+      line-seq))
 
 (defn remove-empty-vals [m]
   (reduce (fn [x [k v]]
@@ -63,13 +78,12 @@
        (partition 2)
        (map (comp (partial drop 1) vec flatten))))
 
+(defn parse-lines [lines]
+  (map parse-commit (split-commits lines)))
+
 (defn read-log [f]
   (with-open [r (io/reader f)]
-    (->> r
-         line-seq
-         split-commits
-         (map parse-commit)
-         doall)))
+    (-> r line-seq parse-lines doall)))
 
 (defn commit-facts [repo-id commit]
   (let [changes (mapcat (fn [change]
@@ -95,14 +109,13 @@
         tx-result (gd/tx (gd/connect) [{:db/id id :repo/name name :repo/path path}])]
     (d/resolve-tempid (:db-after tx-result) (:tempids tx-result) id)))
 
-(defn main [repo-name repo-path log-path]
+(defn run-import [repo-name repo-path commits]
   (println "Creating db: " (gd/create-db))
   (gd/ensure-schema (gd/connect))
   (let [n (atom 0)
         repo-id (create-repo repo-name repo-path)]
-    (doseq [c (read-log log-path)]
+    (doseq [c commits]
       (swap! n inc)
-      ;;(pprint (commit-facts repo-id c))
       (try
         (gd/tx (gd/connect) (commit-facts repo-id c))
         (catch Exception e
@@ -113,3 +126,11 @@
         (flush)))
     (println)
     (println "Imported" @n "commits.")))
+
+(defn import-log-file [repo-name repo-path log-path]
+  (run-import repo-name repo-path (read-log log-path)))
+
+(defn import-local-repo [repo-name repo-path]
+  (run-import repo-name
+              repo-path
+              (-> repo-path git-log-commits parse-lines)))
