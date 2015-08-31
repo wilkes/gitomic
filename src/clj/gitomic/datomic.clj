@@ -21,7 +21,19 @@
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
+    :db/ident :repo/files
+    :db/valueType :db.type/ref
+    :db/cardinality :db.cardinality/many
+    :db.install/_attribute :db.part/db}
+
+   {:db/id #db/id[:db.part/db]
     :db/ident :repo/commits
+    :db/valueType :db.type/ref
+    :db/cardinality :db.cardinality/many
+    :db.install/_attribute :db.part/db}
+
+   {:db/id #db/id[:db.part/db]
+    :db/ident :repo/authors
     :db/valueType :db.type/ref
     :db/cardinality :db.cardinality/many
     :db.install/_attribute :db.part/db}
@@ -37,13 +49,6 @@
     :db/ident :commit/time
     :db/valueType :db.type/instant
     :db/cardinality :db.cardinality/one
-    :db.install/_attribute :db.part/db}
-
-   {:db/id #db/id[:db.part/db]
-    :db/ident :commit/changes
-    :db/valueType :db.type/ref
-    :db/isComponent true
-    :db/cardinality :db.cardinality/many
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
@@ -79,30 +84,14 @@
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
-    :db/ident :person/name
-    :db/valueType :db.type/string
-    :db/cardinality :db.cardinality/one
-    :db/fulltext true
+    :db/ident :commit/changes
+    :db/valueType :db.type/ref
+    :db/isComponent true
+    :db/cardinality :db.cardinality/many
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
-    :db/ident :person/email
-    :db/valueType :db.type/string
-    :db/cardinality :db.cardinality/one
-    :db/unique :db.unique/identity
-    :db/fulltext true
-    :db.install/_attribute :db.part/db}
-
-   {:db/id #db/id[:db.part/db]
-    :db/ident :file/path
-    :db/valueType :db.type/string
-    :db/cardinality :db.cardinality/one
-    :db/unique :db.unique/identity
-    :db/fulltext true
-    :db.install/_attribute :db.part/db}
-
-   {:db/id #db/id[:db.part/db]
-    :db/ident :change/path
+    :db/ident :change/file
     :db/valueType :db.type/ref
     :db/cardinality :db.cardinality/one
     :db.install/_attribute :db.part/db}
@@ -130,6 +119,29 @@
    {:db/id #db/id[:db.part/user] :db/ident :change/delete}
    {:db/id #db/id[:db.part/user] :db/ident :change/copy}
    {:db/id #db/id[:db.part/user] :db/ident :change/rename}
+
+   {:db/id #db/id[:db.part/db]
+    :db/ident :person/name
+    :db/valueType :db.type/string
+    :db/cardinality :db.cardinality/one
+    :db/fulltext true
+    :db.install/_attribute :db.part/db}
+
+   {:db/id #db/id[:db.part/db]
+    :db/ident :person/email
+    :db/valueType :db.type/string
+    :db/cardinality :db.cardinality/one
+    :db/unique :db.unique/identity
+    :db/fulltext true
+    :db.install/_attribute :db.part/db}
+
+   {:db/id #db/id[:db.part/db]
+    :db/ident :file/path
+    :db/valueType :db.type/string
+    :db/cardinality :db.cardinality/one
+    :db/unique :db.unique/identity
+    :db/fulltext true
+    :db.install/_attribute :db.part/db}
    ])
 
 (defn connect []

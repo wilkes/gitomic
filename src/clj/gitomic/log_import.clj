@@ -22,7 +22,7 @@
           as-num #(when-not (= "-" %) (edn/read-string %))]
       (remove-empty-vals
         {:db/id (gd/tid)
-         :change/path {:db/id (gd/tid)
+         :change/file {:db/id (gd/tid)
                        :file/path path}
          :change/added (as-num added)
          :change/deleted (as-num deleted)}))))
@@ -72,9 +72,10 @@
          doall)))
 
 (defn commit-facts [repo-id commit]
-  (let [changes (mapcat (fn [{:keys [change/path] :as change}]
-                          [(:change/path change)
-                           (assoc change :change/path (-> change :change/path :db/id)
+  (let [changes (mapcat (fn [change]
+                          [(assoc (:change/file change)
+                             :repo/_files repo-id)
+                           (assoc change :change/file (-> change :change/file :db/id)
                                          :commit/_changes (:db/id commit))])
                         (:commit/changes commit))
         parents (map (fn [p]
@@ -85,7 +86,8 @@
                         :repo/_commits repo-id)
                  (dissoc :commit/parents :commit/changes))]
             parents
-             [(:commit/author commit)]
+             [(assoc (:commit/author commit)
+                :repo/_authors repo-id)]
             changes)))
 
 (defn create-repo [name path]

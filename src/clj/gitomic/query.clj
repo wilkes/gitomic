@@ -48,16 +48,12 @@
 (defn churn [db r]
   (let [pairs (reverse
                 (sort-by second
-                         (q '[:find ?p (count ?c)
+                         (q '[:find ?p (count ?ch)
                               :in $ ?r
                               :where
-                              [?r :repo/commits ?c]
-                              [?c :commit/merge? false]
-                              [?c :commit/changes ?ch]
-                              [?ch :change/path ?f]
+                              [?r :repo/files ?f]
                               [?f :file/path ?p]
-                              ;[(.endsWith ?p ".rb")]
-                              ]
+                              [?ch :change/file ?f]]
                             db r)))
         m (-> pairs first second)]
     (mapv (fn [[p n]]
@@ -71,13 +67,11 @@
                                  :in $ ?r ?p
                                  :where
                                  [?f1 :file/path ?p]
-                                 [?ch1 :change/path ?f1]x
+                                 [?ch1 :change/file ?f1]
                                  [?c :commit/changes ?ch1]
                                  [?r :repo/commits ?c]
                                  [?c :commit/changes ?ch2]
                                  [(!= ?ch1 ?ch2)]
-                                 [?ch2 :change/path ?f2]
-                                 [?f2 :file/path ?p2]
-                          ;[(.endsWith ?p2 ".rb")]
-                                 ]
+                                 [?ch2 :change/file ?f2]
+                                 [?f2 :file/path ?p2]]
                                db r file-path))))
