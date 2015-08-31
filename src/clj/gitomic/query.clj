@@ -27,19 +27,15 @@
        :in $ ?r ?p
        :where
        [?f :file/path ?p]
-       [?ch :change/path ?f]
-       [?c :commit/changes ?ch]
-       [?c :commit/merge? false]
-       [?r :repo/commits ?c]]
+       [?r :repo/files ?f]
+       [?ch :change/file ?f]]
      db r path))
 
 (defn files-in-repo [db repo]
   (q '[:find [?f ...]
        :in $ ?r
        :where
-       [?r :repo/commits ?c]
-       [?c :commit/changes ?ch]
-       [?ch :change/path ?f]]
+       [?r :repo/files ?f]]
      db repo))
 
 (defn weight [max n]
@@ -51,28 +47,24 @@
         xs))
 
 (defn churn [db r]
-  (reverse
-    (sort-by second
-             (q '[:find ?p (count ?ch)
-                  :in $ ?r
-                  :where
-                  [?r :repo/files ?f]
-                  [?f :file/path ?p]
-                  [?ch :change/file ?f]]
-                db r))))
+  (q '[:find ?p (count ?ch)
+       :in $ ?r
+       :where
+       [?r :repo/files ?f]
+       [?f :file/path ?p]
+       [?ch :change/file ?f]]
+     db r))
 
 (defn file-commit-pair [db r file-path]
-  (reverse
-    (sort-by second
-                     (q '[:find ?p2 (count ?c)
-                                 :in $ ?r ?p
-                                 :where
-                                 [?f1 :file/path ?p]
-                                 [?ch1 :change/file ?f1]
-                                 [?c :commit/changes ?ch1]
-                                 [?r :repo/commits ?c]
-                                 [?c :commit/changes ?ch2]
-                                 [(!= ?ch1 ?ch2)]
-                                 [?ch2 :change/file ?f2]
-                                 [?f2 :file/path ?p2]]
-                               db r file-path))))
+  (q '[:find ?p2 (count ?c)
+       :in $ ?r ?p
+       :where
+       [?f1 :file/path ?p]
+       [?ch1 :change/file ?f1]
+       [?c :commit/changes ?ch1]
+       [?r :repo/commits ?c]
+       [?c :commit/changes ?ch2]
+       [(!= ?ch1 ?ch2)]
+       [?ch2 :change/file ?f2]
+       [?f2 :file/path ?p2]]
+     db r file-path))
