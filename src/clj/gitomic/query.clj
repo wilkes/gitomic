@@ -1,14 +1,10 @@
 (ns gitomic.query
   (:require [datomic.api :as d :refer [q]]
-            [gitomic.datomic :as dtm]
             [clojure.pprint :refer [pprint]]
-            [clojure.set :as set]))
+            [gitomic.stats :as stats]))
 
 (defn repo-by-name [db n]
-  (q '[:find ?r .
-       :in $ ?n
-       :where [?r :repo/name ?n]]
-     db n))
+  (:db/id (d/entity db [:repo/name n])))
 
 (defn count-commits [db r]
   (q '[:find (count ?c) .
@@ -55,6 +51,29 @@
        [?ch :change/file ?f]]
      db r))
 
+(defn files-per-commit-stats [db repo-name]
+  (stats/basic-stats
+    (filter #(< % 10)
+            (map second
+                 (q '[:find ?c (count ?ch)
+                      :in $ ?r-name
+                      :where
+                      [?r :repo/name ?r-name]
+                      [?r :repo/commits ?c]
+                      [?c :commit/changes ?ch]]
+                    db repo-name)))))
+
+(defn commits-by-author [db repo-name]
+  (reverse (sort-by second (q '[:find ?n (count ?c)
+                                :in $ ?r-name
+                                :where
+                                [?r :repo/name ?r-name]
+                                [?r :repo/commits ?c]
+                                [?c :commit/author ?a]
+                                [?a :person/name ?n]]
+                              db repo-name))))
+
+;; for query example ONLY.  Could run FOREVER on big commits
 (defn file-commit-pair [db r file-path]
   (q '[:find ?p2 (count ?c)
        :in $ ?r ?p

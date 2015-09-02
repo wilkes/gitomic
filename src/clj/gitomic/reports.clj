@@ -1,10 +1,12 @@
 (ns gitomic.reports
   (:require [datomic.api :as d :refer [q]]
-            [gitomic.datomic :as gd]
-            [gitomic.query :as query]
             [clojure.pprint :as pretty :refer [pprint]]
             [clojure.data.csv :as csv]
-            [clojure.java.io :as io]))
+            [clojure.java.io :as io]
+            [gitomic.datomic :as gd]
+            [gitomic.query :as query]
+            [gitomic.stats :as stats]
+            ))
 
 (defn all-pairs [xs]
   (loop [pairs [] x (first xs) xs (rest xs)]
@@ -19,16 +21,6 @@
     (when (and (> (count changes) 1) (< (count changes) 50))
       (all-pairs
         (map (comp :file/path :change/file) changes)))))
-
-(defn avg [xs]
-  (/ (reduce + xs)
-     (count xs)))
-
-(defn std-dev [xs]
-  (let [mean (avg xs)
-        square #(* % %)
-        difference #(- mean %)]
-    (avg (map (comp square difference) xs))))
 
 (defn pairs->map [pairs]
   (reduce (fn [m [k v]]
@@ -67,12 +59,8 @@
 (defn temporal-coupling [db repo-name]
   (let [repo (gd/ent db [:repo/name repo-name])
         buddies (pairs->map (churn-buddies db repo-name))
-        churn (pairs->map (query/churn db (:db/id repo)))
-        counts (vals buddies)
-        stats {:max (reduce max counts)
-               :mean (float (avg counts))
-               :std-dev (float (std-dev counts))}]
-    {:stats stats
+        churn (pairs->map (query/churn db (:db/id repo)))]
+    {:stats (stats/basic-stats (vals buddies))
      :pairs (map (partial pair-details churn)
                  buddies)}))
 
