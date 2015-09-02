@@ -19,9 +19,9 @@
                  [enlive "1.1.6"]
                  [org.omcljs/om "0.8.8"]
                  [environ "1.0.0"]
-                 [org.eclipse.jgit/org.eclipse.jgit "4.0.1.201506240215-r" :exclusions [[com.jcraft/jsch]]]
                  [com.datomic/datomic-pro "0.9.5201" :exclusions [commons-codec joda-time]]
                  [cursive/datomic-stubs "0.9.5153" :scope "provided"]
+                 [org.clojure/data.csv "0.1.3"]
                  ]
 
   :plugins [[lein-cljsbuild "1.0.6"]
