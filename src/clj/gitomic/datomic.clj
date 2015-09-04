@@ -46,6 +46,13 @@
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
+    :db/ident :commit/short-sha
+    :db/valueType :db.type/string
+    :db/unique :db.unique/identity
+    :db/cardinality :db.cardinality/one
+    :db.install/_attribute :db.part/db}
+
+   {:db/id #db/id[:db.part/db]
     :db/ident :commit/time
     :db/valueType :db.type/instant
     :db/cardinality :db.cardinality/one

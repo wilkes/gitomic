@@ -59,6 +59,7 @@
       (remove-empty-vals
         {:db/id cid
          :commit/sha sha
+         :commit/short-sha (.substring sha 0 7)
          :commit/parents (parse-parents parents)
          :commit/author {:db/id (gd/tid)
                          :person/name author-name

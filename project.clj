@@ -21,7 +21,10 @@
                  [environ "1.0.0"]
                  [com.datomic/datomic-pro "0.9.5201" :exclusions [commons-codec joda-time]]
                  [cursive/datomic-stubs "0.9.5153" :scope "provided"]
-                 [org.clojure/data.csv "0.1.3"]
+                 ;[org.clojure/data.csv "0.1.3"]
+                 [incanter/incanter-core "1.5.6"]
+                 [incanter/incanter-io "1.5.6"]
+                 [incanter/incanter-charts "1.5.6"]
                  ]
 
   :plugins [[lein-cljsbuild "1.0.6"]
