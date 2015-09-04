@@ -6,7 +6,8 @@
     [gitomic.stats :as stats]
     [incanter.core :as i]
     [incanter.datasets :as ds]
-    [incanter.stats :as istats]))
+    [incanter.stats :as istats]
+    [datomic.api :as d]))
 
 (defn all-pairs [xs]
   (loop [pairs [] x (first xs) xs (rest xs)]
@@ -39,7 +40,7 @@
     (reduce (fn [m pair]
               (merge-with + m {pair 1}))
             {}
-            (remove nil? (mapcat (partial commit-pairs opts) commits)))))
+            (remove nil? (mapcat #(commit-pairs % opts) commits)))))
 
 
 (defn pair-details [churn-report [pair pair-churn]]
@@ -52,8 +53,7 @@
                     :churn f1-churn
                     :coupling pair-churn
                     :percentage-of-f1 (Math/round (float (* 100 (/ pair-churn f1-churn))))
-                    :percentage-of-f2 (Math/round (float (* 100 (/ pair-churn f2-churn))))
-                    })]
+                    :percentage-of-f2 (Math/round (float (* 100 (/ pair-churn f2-churn))))})]
     [(make-map f1 f2 f1-churn f2-churn)
      (make-map f2 f1 f2-churn f1-churn)]))
 
@@ -69,8 +69,8 @@
 
 (defn coupling-stats [ds]
   {:churn (stats/basic-stats (i/$ :churn ds))
-   :coupling (stats/basic-stats (i/$ :churn ds))
-   :percentages (stats/basic-stats (i/$ :percentage ds))})
+   :coupling (stats/basic-stats (i/$ :coupling ds))
+   :percentages (stats/basic-stats (i/$ :percentage-of-f1 ds))})
 
 (defn coupling->csv [db repo fname & opts]
   (let [tc (temporal-coupling db repo opts)
