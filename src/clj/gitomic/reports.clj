@@ -59,6 +59,12 @@
 
 (def rails-code-filter #(or (.startsWith % "app/") (.startsWith % "lib/")))
 
+(defn commit-size-filter [min-size max-size]
+  (fn [commit]
+    (let [size (-> commit :commit/changes count)]
+      (and (>= size min-size)
+           (<= size max-size)))))
+
 (defn temporal-coupling [db repo-name opts]
   (let [r (:db/id (gd/ent db [:repo/name repo-name]))
         churn (pairs->map (query/churn db r))]
@@ -66,6 +72,28 @@
          pairs->map
          (mapcat (partial pair-details churn))
          i/to-dataset)))
+
+(defn changes-summary [commit file-filter]
+  (let [flatten-change (fn [change]
+                         (merge (select-keys (:commit/author commit) [:person/name :person/email])
+                                (select-keys commit [:commit/sha :commit/time])
+                                (select-keys (:change/file change) [:file/path])
+
+                                (if (:change/added change)
+                                  (assoc (select-keys change [:change/added :change/deleted])
+                                    :change/lines (- (:change/added change)
+                                                     (:change/deleted change)))
+                                  {:change/added 0 :change/deleted 0 :change/lines 0})))]
+    (->> commit
+         :commit/changes
+         (filter #(file-filter (-> % :change/file :file/path)))
+         (map flatten-change))))
+
+(defn commits-dataset [db repo-name {:keys [file-filter commit-filter]
+                                     :or {file-filter identity
+                                          commit-filter identity}}]
+  (i/to-dataset (mapcat #(changes-summary % file-filter)
+                        (filter commit-filter (:repo/commits (gd/ent db [:repo/name repo-name]))))))
 
 (defn coupling-stats [ds]
   {:churn (stats/basic-stats (i/$ :churn ds))
