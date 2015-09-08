@@ -85,3 +85,14 @@
   (let [tc (temporal-coupling db repo opts)
         pairs (i/$order [:churn :f1 :percentage] :desc tc)]
     (i/save pairs fname)))
+
+(defn main-dev [ds]
+  (i/add-derived-column :ownership [:change/added :change/added-total]
+                        (fn [x y] (Math/round (if (pos? y)
+                                                (* 100 (float (/ x y)))
+                                                -1.0)))
+                        (i/$join [:file/path :file/path]
+                                 (i/$rollup :sum :change/added [:person/name :file/path] ds)
+                                 (i/rename-cols {:change/added :change/added-total}
+                                                (i/$rollup :sum :change/added :file/path ds))))
+  )
