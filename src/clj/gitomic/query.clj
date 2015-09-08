@@ -73,27 +73,39 @@
                                 [?a :person/name ?n]]
                               db repo-name))))
 
-(defn change-tuples [db repo-name]
-  (q '[:find ?sha ?time ?an ?ae ?subject ?p ?added ?deleted ?lines
-       :in $ ?r-name
-       :where
-       [?r :repo/name ?r-name]
-       [?r :repo/commits ?c]
-       [?c :commit/sha ?sha]
-       [?c :commit/time ?time]
-       [?c :commit/subject ?subject]
-       [?c :commit/author ?a]
-       [?a :person/name ?an]
-       [?a :person/email ?ae]
-       [?c :commit/changes ?ch]
-       [(get-else $ ?ch :change/added 0) ?added]
-       [(get-else $ ?ch :change/deleted 0) ?deleted]
-       [(- ?added ?deleted) ?lines]
-       [?ch :change/file ?f]
-       [?f :file/path ?p]]
-     db repo-name))
-
 (defn change-maps [db repo-name]
+  (let [results (q '[:find ?sha ?time ?an ?ae ?subject ?p ?added ?deleted ?lines
+                     :in $ ?r-name
+                     :where
+                     [?r :repo/name ?r-name]
+                     [?r :repo/commits ?c]
+                     [?c :commit/sha ?sha]
+                     [?c :commit/time ?time]
+                     [?c :commit/subject ?subject]
+                     [?c :commit/author ?a]
+                     [?a :person/name ?an]
+                     [?a :person/email ?ae]
+                     [?c :commit/changes ?ch]
+                     [(get-else $ ?ch :change/added 0) ?added]
+                     [(get-else $ ?ch :change/deleted 0) ?deleted]
+                     [(- ?added ?deleted) ?lines]
+                     [?ch :change/file ?f]
+                     [?f :file/path ?p]]
+                   db repo-name)
+        mapify-result (fn [[sha time an ae subject p added deleted lines]]
+                        {:commit/sha sha
+                         :commit/time time
+                         :person/name an
+                         :person/email ae
+                         :commit/subject subject
+                         :file/path p
+                         :change/added added
+                         :change/deleted deleted
+                         :change/lines lines})]
+    (map mapify-result results)))
+
+;; Left for example purposes
+(defn change-maps-pull [db repo-name]
   ;?sha ?time ?an ?ae ?subject ?p ?added ?deleted ?lines
   (q '[:find [(pull ?ch [{:commit/_changes [{:commit/author [:person/name :person/email]}
                                             :commit/sha
