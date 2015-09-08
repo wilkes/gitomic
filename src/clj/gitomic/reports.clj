@@ -73,7 +73,7 @@
          (mapcat (partial pair-details churn))
          i/to-dataset)))
 
-(defn commits-dataset [db repo-name {:keys [file-filter] :or {file-filter identity}}]
+(defn commits-dataset [db repo-name & {:keys [file-filter] :or {file-filter identity}}]
   (i/to-dataset (filter (comp file-filter :file/path) (query/change-maps db repo-name))))
 
 (defn coupling-stats [ds]
