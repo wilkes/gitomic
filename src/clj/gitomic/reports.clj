@@ -86,13 +86,17 @@
         pairs (i/$order [:churn :f1 :percentage] :desc tc)]
     (i/save pairs fname)))
 
-(defn main-dev [ds]
+(defn path-ownership [ds]
   (i/add-derived-column :ownership [:change/added :change/added-total]
                         (fn [x y] (Math/round (if (pos? y)
                                                 (* 100 (float (/ x y)))
                                                 -1.0)))
                         (i/$join [:file/path :file/path]
-                                 (i/$rollup :sum :change/added [:person/name :file/path] ds)
-                                 (i/rename-cols {:change/added :change/added-total}
-                                                (i/$rollup :sum :change/added :file/path ds))))
-  )
+                                 (i/$join [:file/path :file/path]
+                                          (i/rename-cols {:change/added :change/added-total}
+                                                         (i/$rollup :sum :change/added :file/path ds))
+                                          (i/rename-cols {:change/deleted :change/deleted-total}
+                                                         (i/$rollup :sum :change/deleted :file/path ds)))
+                                 (i/$join [:file/path :file/path]
+                                          (i/$rollup :sum :change/deleted [:person/name :file/path] ds)
+                                          (i/$rollup :sum :change/added [:person/name :file/path] ds)))))
