@@ -87,16 +87,40 @@
     (i/save pairs fname)))
 
 (defn path-ownership [ds]
-  (i/add-derived-column :ownership [:change/added :change/added-total]
-                        (fn [x y] (Math/round (if (pos? y)
-                                                (* 100 (float (/ x y)))
-                                                -1.0)))
-                        (i/$join [:file/path :file/path]
-                                 (i/$join [:file/path :file/path]
-                                          (i/rename-cols {:change/added :change/added-total}
-                                                         (i/$rollup :sum :change/added :file/path ds))
-                                          (i/rename-cols {:change/deleted :change/deleted-total}
-                                                         (i/$rollup :sum :change/deleted :file/path ds)))
-                                 (i/$join [:file/path :file/path]
-                                          (i/$rollup :sum :change/deleted [:person/name :file/path] ds)
-                                          (i/$rollup :sum :change/added [:person/name :file/path] ds)))))
+  (let [added-total (i/rename-cols {:change/added :change/added-total}
+                                   (i/$rollup :sum :change/added :file/path ds))
+        deleted-total (i/rename-cols {:change/deleted :change/deleted-total}
+                                     (i/$rollup :sum :change/deleted :file/path ds))
+        added-author (i/$rollup :sum :change/deleted [:person/name :file/path] ds)
+        deleted-author (i/$rollup :sum :change/added [:person/name :file/path] ds)
+        joined (i/$join [:file/path :file/path]
+                        (i/$join [:file/path :file/path] added-total deleted-total)
+                        (i/$join [:file/path :file/path] added-author deleted-author))]
+    (as-> joined x
+          (i/add-derived-column
+            :ownership [:change/added :change/added-total]
+            (fn [n d] (if (pos? d)
+                        (* 100.0 (/ n d))
+                        -1.0))
+            x)
+          (i/$order [:change/added-total :ownership] :desc x)
+          (i/reorder-columns x [:file/path :person/name	:ownership
+                                :change/added :change/added-total
+                                :change/deleted :change/deleted-total]))))
+
+(defn path-effort [ds]
+  (let [joined
+        (i/$join [:file/path :file/path]
+                 (i/rename-cols {:commit/sha :total-commits}
+                                       (i/$rollup :count :commit/sha :file/path ds))
+                 (i/rename-cols {:commit/sha :author-commits}
+                                (i/$rollup :count :commit/sha [:file/path :person/name] ds)))]
+    (as-> joined x
+          (i/add-derived-column
+            :author-percentage [:author-commits :total-commits]
+            (fn [ac tc] (* 100.0 (/ ac tc)))
+            x)
+          (i/$order [:total-commits :file/path :author-commits] :desc x)
+          (i/reorder-columns x [:file/path :person/name
+                                :author-commits :author-percentage :total-commits]))))
+
