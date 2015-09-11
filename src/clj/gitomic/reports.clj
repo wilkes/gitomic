@@ -74,7 +74,7 @@
          i/to-dataset)))
 
 (defn commits-dataset [db repo-name & {:keys [file-filter] :or {file-filter identity}}]
-  (i/to-dataset (filter (comp file-filter :file/path) (query/change-maps db repo-name))))
+  (i/to-dataset (filter (comp file-filter #(str repo-name "/" %) :file/path) (query/change-maps db repo-name))))
 
 (defn coupling-stats [ds]
   {:churn (stats/basic-stats (i/$ :churn ds))

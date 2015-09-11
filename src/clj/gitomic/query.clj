@@ -122,10 +122,6 @@
        [?c :commit/changes ?ch]]
      db repo-name))
 
-
-
-
-
 ;; for query example ONLY.  Could run FOREVER on big commits
 (defn file-commit-pair [db r file-path]
   (q '[:find ?p2 (count ?c)
@@ -140,3 +136,18 @@
        [?ch2 :change/file ?f2]
        [?f2 :file/path ?p2]]
      db r file-path))
+
+(defn loc-for-repo [db repo-name]
+  (map (fn [m] (merge {:file/path (:file/path m)}
+                      (-> m :loc/_file first)))
+       (q '[:find [(pull ?f [:file/path {:loc/_file [:loc/comment
+                                                     :loc/language
+                                                     :loc/blank
+                                                     :loc/code]}])
+                   ...]
+            :in $ ?repo-name
+            :where
+            [?r :repo/name ?repo-name]
+            [?r :repo/files ?f]
+            [_ :loc/file ?f]]
+          db repo-name)))

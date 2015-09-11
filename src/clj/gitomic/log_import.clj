@@ -5,10 +5,7 @@
             [clojure.edn :as edn]
             [clojure.pprint :refer [pprint]]
             [datomic.api :as d]
-            [gitomic.datomic :as gd]
-            ))
-
-;
+            [gitomic.datomic :as gd]))
 
 (defn git-log-commits [d]
   (-> (sh "git"
@@ -31,14 +28,14 @@
               x))
           m m))
 
-(defn parse-numstat [s]
+(defn parse-numstat [repo-name s]
   (when-not (empty? s)
     (let [[added deleted path] (string/split s #"\t")
           as-num #(when-not (= "-" %) (edn/read-string %))]
       (remove-empty-vals
         {:db/id (gd/tid)
          :change/file {:db/id (gd/tid)
-                       :file/path path}
+                       :file/path (str repo-name "/" path)}
          :change/added (as-num added)
          :change/deleted (as-num deleted)}))))
 
@@ -49,7 +46,7 @@
                     (if two
                       {:db/id (gd/tid) :commit/sha two}))])))
 
-(defn parse-commit [raw-commit]
+(defn parse-commit [repo-name raw-commit]
   (try
     (let [cid (gd/tid)
           [sha parents author-name author-email committed-at] (edn/read-string (first raw-commit))
@@ -68,7 +65,8 @@
          :commit/merge? (> 1 (count parents))
          :commit/subject subject
          :commit/body (if-not (empty? body) body)
-         :commit/changes (into [] (remove nil? (map parse-numstat changes)))}))
+         :commit/changes (into [] (remove nil? (map (partial parse-numstat repo-name)
+                                                    changes)))}))
     (catch Exception e
       (pprint raw-commit)
       (throw e))))
@@ -79,14 +77,14 @@
        (partition 2)
        (map (comp (partial drop 1) vec flatten))))
 
-(defn parse-lines [lines]
-  (map parse-commit (split-commits lines)))
+(defn parse-lines [repo-name lines]
+  (map (partial parse-commit repo-name) (split-commits lines)))
 
-(defn read-log [f]
+(defn read-log [repo-name f]
   (with-open [r (io/reader f)]
-    (-> r line-seq parse-lines doall)))
+    (-> r line-seq (partial parse-lines repo-name) doall)))
 
-(defn commit-facts [repo-id commit]
+(defn commit-facts [repo-id repo-name commit]
   (let [changes (mapcat (fn [change]
                           [(assoc (:change/file change)
                              :repo/_files repo-id)
@@ -118,9 +116,9 @@
     (doseq [c commits]
       (swap! n inc)
       (try
-        (gd/tx (gd/connect) (commit-facts repo-id c))
+        (gd/tx (gd/connect) (commit-facts repo-id repo-name c))
         (catch Exception e
-          (pprint (commit-facts repo-id c))
+          (pprint (commit-facts repo-id repo-name c))
           (throw e)))
       (when (= 0 (rem @n 100))
         (print ".")
@@ -129,9 +127,9 @@
     (println "Imported" @n "commits.")))
 
 (defn import-log-file [repo-name repo-path log-path]
-  (run-import repo-name repo-path (read-log log-path)))
+  (run-import repo-name repo-path (read-log repo-name log-path)))
 
 (defn import-local-repo [repo-name repo-path]
   (run-import repo-name
               repo-path
-              (-> repo-path git-log-commits parse-lines)))
+              (->> repo-path git-log-commits (parse-lines repo-name))))
