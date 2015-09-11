@@ -3,15 +3,8 @@
             [clojure.java.shell :refer [sh]]
             [clojure.string :as string]
             [datomic.api :as d]
-            [gitomic.datomic :as gd]))
-
-(defn file-ref [db repo-id path]
-  (d/q '[:find ?f .
-         :in $ ?r ?p
-         :where
-         [?f :file/path ?p]
-         [?r :repo/files ?f]]
-       db repo-id path))
+            [gitomic.datomic :as gd])
+  (:import [java.io StringReader]))
 
 (defn line->map [s]
   (let [[lang path blank comment code] (take 5 (string/split s #","))]
@@ -29,22 +22,23 @@
            "--quiet"
            :dir d)
        :out
-       (java.io.StringReader.)
+       (StringReader.)
        io/reader
        line-seq
        (drop 2)
        (map line->map)))
 
 (defn loc-facts [repo-name locs]
-  (let [repo-id (:db/id (gd/ent [:repo/name repo-name]))
-        db (gd/db)
+  (let [db (gd/db repo-name)
         loc-fact (fn [loc]
-                   (let [f (file-ref db repo-id (str repo-name "/" (:loc/file loc)))]
+                   (let [f (:db/id (gd/ent db [:file/path (:loc/file loc)]))]
                      (when f
-                       (assoc loc :loc/file f
-                                  :db/id (gd/tid)))))]
+                       (-> loc
+                           (assoc :db/id f)
+                           (dissoc :loc/file)))))]
     (remove nil? (map loc-fact locs))))
 
 (defn run [repo-name repo-dir]
-  (gd/ensure-schema (gd/connect))
-  (gd/tx (gd/connect) (loc-facts repo-name (cloc repo-dir))))
+  (gd/ensure-schema (gd/connect repo-name))
+  (gd/tx (gd/connect repo-name) (loc-facts repo-name (cloc repo-dir)))
+  (println "Done"))

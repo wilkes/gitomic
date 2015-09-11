@@ -34,13 +34,11 @@
           {}
           pairs))
 
-(defn change-pairs [db repo-name opts]
-  (let [repo (gd/ent db [:repo/name repo-name])
-        commits (filter #(not (:commit/merge? %)) (:repo/commits repo))]
-    (reduce (fn [m pair]
-              (merge-with + m {pair 1}))
-            {}
-            (remove nil? (mapcat #(commit-pairs % opts) commits)))))
+(defn change-pairs [db opts]
+  (reduce (fn [m pair]
+            (merge-with + m {pair 1}))
+          {}
+          (remove nil? (mapcat #(commit-pairs (gd/ent db %) opts) (query/non-merge-commits db)))))
 
 
 (defn pair-details [churn-report [pair pair-churn]]
@@ -65,24 +63,23 @@
       (and (>= size min-size)
            (<= size max-size)))))
 
-(defn temporal-coupling [db repo-name opts]
-  (let [r (:db/id (gd/ent db [:repo/name repo-name]))
-        churn (pairs->map (query/churn db r))]
-    (->> (change-pairs db repo-name opts)
+(defn temporal-coupling [db opts]
+  (let [churn (pairs->map (query/churn db))]
+    (->> (change-pairs db opts)
          pairs->map
          (mapcat (partial pair-details churn))
          i/to-dataset)))
 
-(defn commits-dataset [db repo-name & {:keys [file-filter] :or {file-filter identity}}]
-  (i/to-dataset (filter (comp file-filter #(str repo-name "/" %) :file/path) (query/change-maps db repo-name))))
+(defn commits-dataset [db & {:keys [file-filter] :or {file-filter identity}}]
+  (i/to-dataset (filter (comp file-filter :file/path) (query/change-maps db))))
 
 (defn coupling-stats [ds]
   {:churn (stats/basic-stats (i/$ :churn ds))
    :coupling (stats/basic-stats (i/$ :coupling ds))
    :percentages (stats/basic-stats (i/$ :percentage-of-f1 ds))})
 
-(defn coupling->csv [db repo fname & opts]
-  (let [tc (temporal-coupling db repo opts)
+(defn coupling->csv [db fname & opts]
+  (let [tc (temporal-coupling db opts)
         pairs (i/$order [:churn :f1 :percentage] :desc tc)]
     (i/save pairs fname)))
 

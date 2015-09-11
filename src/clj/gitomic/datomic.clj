@@ -3,42 +3,7 @@
             [environ.core :refer [env]]))
 
 (def schema
-  [
-   {:db/id #db/id[:db.part/db]
-    :db/ident :repo/name
-    :db/valueType :db.type/string
-    :db/cardinality :db.cardinality/one
-    :db/fulltext true
-    :db/unique :db.unique/identity
-    :db.install/_attribute :db.part/db}
-
-   {:db/id #db/id[:db.part/db]
-    :db/ident :repo/path
-    :db/valueType :db.type/string
-    :db/cardinality :db.cardinality/one
-    :db/fulltext true
-    :db/unique :db.unique/identity
-    :db.install/_attribute :db.part/db}
-
-   {:db/id #db/id[:db.part/db]
-    :db/ident :repo/files
-    :db/valueType :db.type/ref
-    :db/cardinality :db.cardinality/many
-    :db.install/_attribute :db.part/db}
-
-   {:db/id #db/id[:db.part/db]
-    :db/ident :repo/commits
-    :db/valueType :db.type/ref
-    :db/cardinality :db.cardinality/many
-    :db.install/_attribute :db.part/db}
-
-   {:db/id #db/id[:db.part/db]
-    :db/ident :repo/authors
-    :db/valueType :db.type/ref
-    :db/cardinality :db.cardinality/many
-    :db.install/_attribute :db.part/db}
-
-   {:db/id #db/id[:db.part/db]
+  [{:db/id #db/id[:db.part/db]
     :db/ident :commit/sha
     :db/valueType :db.type/string
     :db/unique :db.unique/identity
@@ -151,12 +116,6 @@
     :db.install/_attribute :db.part/db}
 
    {:db/id #db/id[:db.part/db]
-    :db/ident :loc/file
-    :db/valueType :db.type/ref
-    :db/cardinality :db.cardinality/one
-    :db.install/_attribute :db.part/db}
-
-   {:db/id #db/id[:db.part/db]
     :db/ident :loc/language
     :db/valueType :db.type/string
     :db/cardinality :db.cardinality/one
@@ -181,11 +140,14 @@
     :db.install/_attribute :db.part/db}
    ])
 
-(defn connect []
-  (d/connect (env :datomic-uri)))
+(defn datomic-uri [repo-name]
+ (str (env :datomic-uri) repo-name))
 
-(defn db []
-  (d/db (connect)))
+(defn connect [repo-name]
+  (d/connect (datomic-uri repo-name)))
+
+(defn db [repo-name]
+  (d/db (connect repo-name)))
 
 (defn tid []
   (d/tempid :db.part/user))
@@ -193,16 +155,14 @@
 (defn tx [conn facts]
   @(d/transact-async conn facts))
 
-(defn ent
-  ([id] (ent (db) id))
-  ([db id] (d/entity db id)))
+(defn ent [db id]
+ (d/entity db id))
 
+(defn create-db [repo-name]
+  (d/create-database (datomic-uri repo-name)))
 
-(defn create-db []
-  (d/create-database (env :datomic-uri)))
-
-(defn delete-db []
-  (d/delete-database (env :datomic-uri)))
+(defn delete-db [repo-name]
+  (d/delete-database (datomic-uri repo-name)))
 
 (defn ensure-schema [conn]
   @(d/transact conn schema))

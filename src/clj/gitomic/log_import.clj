@@ -5,7 +5,8 @@
             [clojure.edn :as edn]
             [clojure.pprint :refer [pprint]]
             [datomic.api :as d]
-            [gitomic.datomic :as gd]))
+            [gitomic.datomic :as gd])
+  (:import [java.io StringReader]))
 
 (defn git-log-commits [d]
   (-> (sh "git"
@@ -16,7 +17,7 @@
           "--reverse"
           :dir d)
       :out
-      (java.io.StringReader.)
+      (StringReader.)
       io/reader
       line-seq))
 
@@ -28,14 +29,14 @@
               x))
           m m))
 
-(defn parse-numstat [repo-name s]
+(defn parse-numstat [s]
   (when-not (empty? s)
     (let [[added deleted path] (string/split s #"\t")
           as-num #(when-not (= "-" %) (edn/read-string %))]
       (remove-empty-vals
         {:db/id (gd/tid)
          :change/file {:db/id (gd/tid)
-                       :file/path (str repo-name "/" path)}
+                       :file/path path}
          :change/added (as-num added)
          :change/deleted (as-num deleted)}))))
 
@@ -46,7 +47,7 @@
                     (if two
                       {:db/id (gd/tid) :commit/sha two}))])))
 
-(defn parse-commit [repo-name raw-commit]
+(defn parse-commit [raw-commit]
   (try
     (let [cid (gd/tid)
           [sha parents author-name author-email committed-at] (edn/read-string (first raw-commit))
@@ -65,8 +66,7 @@
          :commit/merge? (> 1 (count parents))
          :commit/subject subject
          :commit/body (if-not (empty? body) body)
-         :commit/changes (into [] (remove nil? (map (partial parse-numstat repo-name)
-                                                    changes)))}))
+         :commit/changes (into [] (remove nil? (map parse-numstat changes)))}))
     (catch Exception e
       (pprint raw-commit)
       (throw e))))
@@ -77,17 +77,16 @@
        (partition 2)
        (map (comp (partial drop 1) vec flatten))))
 
-(defn parse-lines [repo-name lines]
-  (map (partial parse-commit repo-name) (split-commits lines)))
+(defn parse-lines [lines]
+  (map parse-commit (split-commits lines)))
 
-(defn read-log [repo-name f]
+(defn read-log [f]
   (with-open [r (io/reader f)]
-    (-> r line-seq (partial parse-lines repo-name) doall)))
+    (-> r line-seq parse-lines doall)))
 
-(defn commit-facts [repo-id repo-name commit]
+(defn commit-facts [commit]
   (let [changes (mapcat (fn [change]
-                          [(assoc (:change/file change)
-                             :repo/_files repo-id)
+                          [(:change/file change)
                            (assoc change :change/file (-> change :change/file :db/id)
                                          :commit/_changes (:db/id commit))])
                         (:commit/changes commit))
@@ -95,30 +94,23 @@
                        (assoc p :commit/_parents (:db/id commit)))
                      (:commit/parents commit))]
     (concat [(-> commit
-                 (assoc :commit/author (-> commit :commit/author :db/id)
-                        :repo/_commits repo-id)
+                 (assoc :commit/author (-> commit :commit/author :db/id))
                  (dissoc :commit/parents :commit/changes))]
             parents
-             [(assoc (:commit/author commit)
-                :repo/_authors repo-id)]
+             [(:commit/author commit)]
             changes)))
 
-(defn create-repo [name path]
-  (let [id (gd/tid)
-        tx-result (gd/tx (gd/connect) [{:db/id id :repo/name name :repo/path path}])]
-    (d/resolve-tempid (:db-after tx-result) (:tempids tx-result) id)))
-
-(defn run-import [repo-name repo-path commits]
-  (println "Creating db: " (gd/create-db))
-  (gd/ensure-schema (gd/connect))
+(defn run-import [repo-name commits]
+  (println "Creating db: " (gd/create-db repo-name))
   (let [n (atom 0)
-        repo-id (create-repo repo-name repo-path)]
+        conn (gd/connect repo-name)]
+    (gd/ensure-schema conn)
     (doseq [c commits]
       (swap! n inc)
       (try
-        (gd/tx (gd/connect) (commit-facts repo-id repo-name c))
+        (gd/tx conn (commit-facts c))
         (catch Exception e
-          (pprint (commit-facts repo-id repo-name c))
+          (pprint (commit-facts c))
           (throw e)))
       (when (= 0 (rem @n 100))
         (print ".")
@@ -126,10 +118,8 @@
     (println)
     (println "Imported" @n "commits.")))
 
-(defn import-log-file [repo-name repo-path log-path]
-  (run-import repo-name repo-path (read-log repo-name log-path)))
+(defn import-log-file [repo-name log-path]
+  (run-import repo-name (read-log log-path)))
 
 (defn import-local-repo [repo-name repo-path]
-  (run-import repo-name
-              repo-path
-              (->> repo-path git-log-commits (parse-lines repo-name))))
+  (run-import repo-name (parse-lines (git-log-commits repo-path))))
