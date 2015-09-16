@@ -118,8 +118,5 @@
     (println)
     (println "Imported" @n "commits.")))
 
-(defn import-log-file [repo-name log-path]
-  (run-import repo-name (read-log log-path)))
-
 (defn import-local-repo [repo-name repo-path]
   (run-import repo-name (parse-lines (git-log-commits repo-path))))

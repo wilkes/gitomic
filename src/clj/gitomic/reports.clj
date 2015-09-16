@@ -25,8 +25,7 @@
     (when (and (> (count changes) min-change-size)
                (< (count changes) max-change-size))
       (all-pairs
-        (filter file-filter
-                (map (comp :file/path :change/file) changes))))))
+        (filter file-filter (map (comp :file/path :change/file) changes))))))
 
 (defn pairs->map [pairs]
   (reduce (fn [m [k v]]

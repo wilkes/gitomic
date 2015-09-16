@@ -148,17 +148,11 @@
      db file-path))
 
 (defn loc [db]
-  (map (fn [m] (merge {:file/path (:file/path m)}
-                      (-> m :loc/_file first)))
-       (q '[:find [(pull ?f [:file/path {:loc/_file [:loc/comment
-                                                     :loc/language
-                                                     :loc/blank
-                                                     :loc/code]}])
-                   ...]
-            :in $ ?repo-name
-            :where
-            [_ :loc/file ?f]]
-          db)))
+  (q '[:find [(pull ?f [*]) ...]
+       :in $
+       :where
+       [?f :loc/code]]
+     db))
 
 (defn count-loc-entities [db]
   (q '[:find (count ?loc) .
