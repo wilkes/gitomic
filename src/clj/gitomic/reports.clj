@@ -120,3 +120,15 @@
           (i/reorder-columns x [:file/path :person/name
                                 :author-commits :author-percentage :total-commits]))))
 
+(defn authors-contribution [repo-name]
+  (let [db (gd/db repo-name)
+        commits (commits-dataset db)]
+    (as-> (i/$join [:person/name :person/name]
+                   (i/$rollup :sum :change/added :person/name commits)
+                   (i/$rollup :sum :change/deleted :person/name commits))
+          ds
+          (i/add-derived-column :changes/total [:change/added :change/deleted] -
+                                ds)
+          (i/reorder-columns ds [:person/name :change/added :change/deleted :changes/total])
+          (i/$order [:change/added :change/deleted] :desc ds))))
+

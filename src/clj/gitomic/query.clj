@@ -117,6 +117,23 @@
                          :change/lines lines})]
     (map mapify-result results)))
 
+(defn authors-contribution [db]
+  (q '[:find ?an (sum ?added) (sum ?deleted) (sum ?total)
+       :in $
+       :where
+       [?c :commit/author ?a]
+       [?a :person/name ?an]
+       [?c :commit/changes ?ch]
+       [(get-else $ ?ch :change/added 0) ?added]
+       [(get-else $ ?ch :change/deleted 0) ?deleted]
+       [(- ?added ?deleted) ?total]
+       [?ch :change/file ?f]
+       [?f :file/path ?p]
+       (or
+         [(.startsWith ?p "app/")]
+         [(.startsWith ?p "lib/")])]
+     db))
+
 ;; Left for example purposes
 (defn change-maps-pull [db]
   ;?sha ?time ?an ?ae ?subject ?p ?added ?deleted ?lines
