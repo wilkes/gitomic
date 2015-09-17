@@ -26,20 +26,27 @@
    "M" :change/modify
    "R" :change/rename})
 
-(defn parse-commit [[sha & files]]
-  (map (fn [f]
-         (let [[t path] (string/split f #"\t")]
-           {:commit/sha sha
-            :file/path path
-            :change/type (get change-types t)}))
-       files))
+(defn strip-empty-commits [c]
+  (flatten (reverse (take 2 (reverse
+                              (partition-by #(re-matches #"^[0-9a-f]+" %) c))))))
+
+(defn parse-commit [c]
+  (let [[sha & files] (strip-empty-commits c)]
+    (remove nil?
+            (map (fn [f]
+                   (let [[t path] (string/split f #"\t")
+                         type (get change-types t)]
+                     (if (nil? type)
+                       (println sha path t)
+                       {:commit/sha sha
+                        :file/path path
+                        :change/type (get change-types t)})))
+                 files))))
 
 (defn partition-log [repo-path]
   (->> (git-log-name-status repo-path)
-       (remove empty?)
-       (partition-by #(re-matches #"^[0-9a-f]+" %))
-       (partition 2)
-       (map flatten)
+       (partition-by empty?)
+       (remove (comp empty? first))
        (map parse-commit)
        flatten))
 
@@ -61,8 +68,10 @@
           (map (fn [ch]
                  (try
                    (let [ch-id (get-in change-lookup [(:commit/sha ch) (:file/path ch)])]
-                     {:db/id ch-id
-                      :change/type (:change/type ch)})
+                     (if (nil? ch-id)
+                       (println (pr-str [(:commit/sha ch) (:file/path ch)]))
+                       {:db/id ch-id
+                        :change/type (:change/type ch)}))
                    (catch Exception _
                      (pprint ch))))
                changes)))

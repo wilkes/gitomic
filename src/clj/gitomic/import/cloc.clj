@@ -41,4 +41,4 @@
 (defn run [repo-name repo-dir]
   (gd/ensure-schema (gd/connect repo-name))
   (gd/tx (gd/connect repo-name) (loc-facts repo-name (cloc repo-dir)))
-  (println "Done"))
+  (println "Finished cloc"))
