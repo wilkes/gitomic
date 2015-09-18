@@ -25,7 +25,7 @@
                  [incanter/incanter-core "1.5.6"]
                  [incanter/incanter-io "1.5.6"]
                  [incanter/incanter-charts "1.5.6"]
-                 ]
+                 [clj-time "0.11.0"]]
 
   :plugins [[lein-cljsbuild "1.0.6"]
             [lein-environ "1.0.0"]]

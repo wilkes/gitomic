@@ -1,7 +1,12 @@
 (ns gitomic.query
   (:require [datomic.api :as d :refer [q]]
             [clojure.pprint :refer [pprint]]
-            [gitomic.stats :as stats]))
+            [gitomic.stats :as stats]
+            [gitomic.datomic :as gd]
+            [clj-time.core :as t]
+            [clj-time.coerce :as tc]
+
+            ))
 
 (defn count-commits [db]
   (q '[:find (count ?c) .
@@ -133,6 +138,18 @@
          [(.startsWith ?p "app/")]
          [(.startsWith ?p "lib/")])]
      db))
+
+(defn file-age [db]
+  (map (fn [[p ts]]
+         [p (t/in-days (t/interval (tc/from-date ts) (t/now)))])
+       (q '[:find ?p (max ?t)
+            :where
+            [?f :loc/language _]
+            [?f :file/path ?p]
+            [?ch :change/file ?f]
+            [?c :commit/changes ?ch]
+            [?c :commit/time ?t]]
+          db)))
 
 ;; Left for example purposes
 (defn change-maps-pull [db]
