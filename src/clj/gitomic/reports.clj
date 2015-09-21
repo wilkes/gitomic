@@ -7,7 +7,9 @@
     [incanter.core :as i]
     [incanter.datasets :as ds]
     [incanter.stats :as istats]
-    [datomic.api :as d]))
+    [datomic.api :as d]
+    [clj-time.core :as t]
+    [clj-time.coerce :as tc]))
 
 (defn all-pairs [xs]
   (loop [pairs [] x (first xs) xs (rest xs)]
@@ -73,9 +75,9 @@
   (i/to-dataset (filter (comp file-filter :file/path) (query/change-maps db))))
 
 (defn coupling-stats [ds]
-  {:churn (stats/basic-stats (i/$ :churn ds))
-   :coupling (stats/basic-stats (i/$ :coupling ds))
-   :percentages (stats/basic-stats (i/$ :percentage-of-f1 ds))})
+  {:churn (stats/basic (i/$ :churn ds))
+   :coupling (stats/basic (i/$ :coupling ds))
+   :percentages (stats/basic (i/$ :percentage-of-f1 ds))})
 
 (defn coupling->csv [db fname & opts]
   (let [tc (temporal-coupling db opts)
@@ -132,3 +134,9 @@
           (i/reorder-columns ds [:person/name :change/added :change/deleted :changes/total])
           (i/$order [:change/added :change/deleted] :desc ds))))
 
+(defn file-age [db]
+  (i/to-dataset
+    (map (fn [[p ts]]
+           {:file/path p
+            :last-commit (t/in-days (t/interval (tc/from-date ts) (t/now)))})
+         (query/file-age db))))

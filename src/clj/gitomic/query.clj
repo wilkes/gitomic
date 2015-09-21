@@ -69,7 +69,7 @@
      db))
 
 (defn files-per-commit-stats [db]
-  (stats/basic-stats
+  (stats/basic
     (filter #(< % 10)
             (map second
                  (q '[:find ?c (count ?ch)
@@ -140,16 +140,14 @@
      db))
 
 (defn file-age [db]
-  (map (fn [[p ts]]
-         [p (t/in-days (t/interval (tc/from-date ts) (t/now)))])
-       (q '[:find ?p (max ?t)
-            :where
-            [?f :loc/language _]
-            [?f :file/path ?p]
-            [?ch :change/file ?f]
-            [?c :commit/changes ?ch]
-            [?c :commit/time ?t]]
-          db)))
+  (q '[:find ?p (max ?t)
+       :where
+       [?f :loc/language _]
+       [?f :file/path ?p]
+       [?ch :change/file ?f]
+       [?c :commit/changes ?ch]
+       [?c :commit/time ?t]]
+     db))
 
 ;; Left for example purposes
 (defn change-maps-pull [db]
