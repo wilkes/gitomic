@@ -90,7 +90,8 @@
   (let [changes (mapcat (fn [change]
                           [(:change/file change)
                            (assoc change :change/file (-> change :change/file :db/id)
-                                         :commit/_changes (:db/id commit))])
+                                         :commit/_changes (:db/id commit)
+                                         :change/upsert-id (str (:commit/short-sha commit) "/" (-> change :change/file :file/path)))])
                         (:commit/changes commit))
         parents (map (fn [p]
                        (assoc p :commit/_parents (:db/id commit)))

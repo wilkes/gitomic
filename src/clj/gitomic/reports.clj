@@ -56,7 +56,7 @@
     [(make-map f1 f2 f1-churn f2-churn)
      (make-map f2 f1 f2-churn f1-churn)]))
 
-(def rails-code-filter #(or (.startsWith % "app/") (.startsWith % "lib/")))
+(def rails-code-filter #(or (.startsWith ^String % "app/") (.startsWith ^String % "lib/")))
 
 (defn commit-size-filter [min-size max-size]
   (fn [commit]
@@ -135,8 +135,9 @@
           (i/$order [:change/added :change/deleted] :desc ds))))
 
 (defn file-age [db]
-  (i/to-dataset
-    (map (fn [[p ts]]
-           {:file/path p
-            :last-commit (t/in-days (t/interval (tc/from-date ts) (t/now)))})
-         (query/file-age db))))
+  (->> (map (fn [[p ts]]
+              {:file/path p
+               :last-commit (t/in-days (t/interval (tc/from-date ts) (t/now)))})
+            (query/file-age db))
+       i/to-dataset
+       (i/$order [:last-commit] :desc)))

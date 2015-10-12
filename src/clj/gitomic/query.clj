@@ -192,7 +192,14 @@
        :where [?loc :loc/code]]
      db))
 
+(defn count-change-entities [db]
+  (q '[:find (count ?loc) .
+       :in $
+       :where [?loc :change/upsert-id]]
+     db))
+
 (defn summary [db]
   {:commits (count-commits db)
+   :changes (count-change-entities db)
    :files (count-files db)
    :authors (count-authors db)})
