@@ -20,11 +20,11 @@
       line-seq))
 
 (def change-types
-  {"A" :change/add
-   "C" :change/copy
-   "D" :change/delete
-   "M" :change/modify
-   "R" :change/rename})
+  {"A" :change.type/add
+   "C" :change.type/copy
+   "D" :change.type/delete
+   "M" :change.type/modify
+   "R" :change.type/rename})
 
 (defn strip-empty-commits [c]
   (flatten (reverse (take 2 (reverse

@@ -86,11 +86,11 @@
     :db/cardinality :db.cardinality/one
     :db.install/_attribute :db.part/db}
 
-   {:db/id #db/id[:db.part/user] :db/ident :change/modify}
-   {:db/id #db/id[:db.part/user] :db/ident :change/add}
-   {:db/id #db/id[:db.part/user] :db/ident :change/delete}
-   {:db/id #db/id[:db.part/user] :db/ident :change/copy}
-   {:db/id #db/id[:db.part/user] :db/ident :change/rename}
+   {:db/id #db/id[:db.part/user] :db/ident :change.type/modify}
+   {:db/id #db/id[:db.part/user] :db/ident :change.type/add}
+   {:db/id #db/id[:db.part/user] :db/ident :change.type/delete}
+   {:db/id #db/id[:db.part/user] :db/ident :change.type/copy}
+   {:db/id #db/id[:db.part/user] :db/ident :change.type/rename}
 
    {:db/id #db/id[:db.part/db]
     :db/ident :person/name
