@@ -96,12 +96,16 @@
         parents (map (fn [p]
                        (assoc p :commit/_parents (:db/id commit)))
                      (:commit/parents commit))]
-    (concat [(-> commit
-                 (assoc :commit/author (-> commit :commit/author :db/id))
-                 (dissoc :commit/parents :commit/changes))]
-            parents
-             [(:commit/author commit)]
-            changes)))
+    (concat
+      [{:db/id (d/tempid :db.part/tx)
+        :tx/sha (:commit/sha commit)
+        :commit/time (-> commit :commit/time)}
+       (-> commit
+           (assoc :commit/author (-> commit :commit/author :db/id))
+           (dissoc :commit/parents :commit/changes))]
+      parents
+      [(:commit/author commit)]
+      changes)))
 
 (defn run-import [repo-name commits]
   (println "Creating db: " (gd/create-db repo-name))

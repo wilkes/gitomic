@@ -203,3 +203,10 @@
    :changes (count-change-entities db)
    :files (count-files db)
    :authors (count-authors db)})
+
+(defn tx-for-sha [db sha]
+  (q '[:find ?tx .
+       :in $ ?sha
+       :where
+       [?tx :tx/sha ?sha]]
+     db sha))

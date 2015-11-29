@@ -4,13 +4,15 @@
             [clojure.string :as string]
             [gitomic.datomic :as gd]
             [datomic.api :as d :refer [q]]
-            [clojure.pprint :refer [pprint]])
+            [clojure.pprint :refer [pprint]]
+            [clojure.edn :as edn])
   (:import [java.io StringReader]))
 
 (defn git-log-name-status [d]
   (-> (sh "git"
           "log"
-          "--pretty=format:%H"
+          "--pretty=format:[\"%H\" #inst \"%ad\"]"
+          "--date=iso-strict"
           "--name-status"
           "--no-merges"
           :dir d)
@@ -28,10 +30,11 @@
 
 (defn strip-empty-commits [c]
   (flatten (reverse (take 2 (reverse
-                              (partition-by #(re-matches #"^[0-9a-f]+" %) c))))))
+                              (partition-by #(re-matches #"^\[" %) c))))))
 
 (defn parse-commit [c]
-  (let [[sha & files] (strip-empty-commits c)]
+  (let [[commit-info & files] (strip-empty-commits c)
+        [sha commit-time] (edn/read-string commit-info)]
     (remove nil?
             (map (fn [f]
                    (let [[t path] (string/split f #"\t")
@@ -39,6 +42,7 @@
                      (if (nil? type)
                        (println sha path t)
                        {:commit/sha sha
+                        :commit/time commit-time
                         :file/path path
                         :change/type (get change-types t)})))
                  files))))
@@ -63,21 +67,23 @@
             [?f :file/path ?path]]
           db)))
 
-(defn change-type-facts [db change-lookup changes]
-  (remove nil?
-          (map (fn [ch]
-                 (try
-                   (let [ch-id (get-in change-lookup [(:commit/sha ch) (:file/path ch)])]
-                     (if (nil? ch-id)
-                       (println (pr-str [(:commit/sha ch) (:file/path ch)]))
-                       {:db/id ch-id
-                        :change/type (:change/type ch)}))
-                   (catch Exception _
-                     (pprint ch))))
-               changes)))
+(defn change-type-facts [db change-lookup commit]
+  (try
+    (let [ch-id (get-in change-lookup [(:commit/sha commit) (:file/path commit)])]
+      (if (nil? ch-id)
+        (println (pr-str [(:commit/sha commit) (:file/path commit)]))
+        [{:db/id ch-id
+          :change/type (:change/type commit)}
+         {:db/id (d/tempid :db.part/tx)
+          :tx/sha (:commit/sha commit)
+          :commit/time (-> commit :commit/time)}]))
+    (catch Exception _
+      (pprint commit))))
 
 (defn run [repo-name repo-path]
   (let [db (gd/db repo-name)]
-    (gd/tx (gd/connect repo-name)
-           (change-type-facts db (change-file-lookup db) (partition-log repo-path)))
+    (doseq [commit (partition-log repo-path)
+            :let [commit-name-status (change-type-facts db (change-file-lookup db) commit)]]
+      (when-not (nil? commit-name-status))
+      (gd/tx (gd/connect repo-name) commit-name-status))
     (println "Finished name-status update")))
