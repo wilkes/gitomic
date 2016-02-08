@@ -26,14 +26,12 @@
 (defn word-cloud [word-counts]
   (string/join " " (mapcat (fn [[x n]] (repeat n x)) word-counts)))
 
-(defn make-word-cloud [strs contains remove top-n]
+(defn filtered-weighted [strs remove top-n]
   (as-> strs xs
-        (filter #(if contains (.contains % contains) true) xs)
         (words xs)
         (apply dissoc xs remove)
         (vec (reverse (sort-by second xs)))
-        (take (or top-n (count xs)) xs)
-        (word-cloud xs)))
+        (take (or top-n (count xs)) xs)))
 
 [{:subscribed [:subscribed
                :labels
